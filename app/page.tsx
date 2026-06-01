@@ -195,7 +195,7 @@ export default function AntaraGame() {
         <p className="game-subtitle">A memory challenge for those who move with intention.</p>
         {imageError && (
           <div className="error-banner">
-            <p>Instagram not connected &mdash; token required.</p>
+            <p>Add your photos to the <strong>public/cards</strong> folder to play.</p>
             <button className="retry-btn" onClick={loadImages}>Retry</button>
           </div>
         )}
@@ -225,7 +225,7 @@ export default function AntaraGame() {
           disabled={!hasImages}
           style={!hasImages ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
         >
-          {hasImages ? 'BEGIN' : 'CONNECT INSTAGRAM TO PLAY'}
+          {hasImages ? 'BEGIN' : 'ADD PHOTOS TO PLAY'}
         </button>
       </div>
     </div>

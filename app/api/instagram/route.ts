@@ -1,26 +1,20 @@
 ﻿import { NextResponse } from 'next/server'
+import fs from 'fs'
+import path from 'path'
+
+const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
 
 export async function GET() {
-  const token = process.env.INSTAGRAM_TOKEN
-  if (!token) {
-    return NextResponse.json({ error: 'No token configured' }, { status: 500 })
-  }
-
   try {
-    const res = await fetch(
-      `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url&limit=60&access_token=${token}`,
-      { next: { revalidate: 3600 } }
-    )
-    const data = await res.json()
+    const cardsDir = path.join(process.cwd(), 'public', 'cards')
+    const files = fs.existsSync(cardsDir) ? fs.readdirSync(cardsDir) : []
+    const images = files
+      .filter(f => IMAGE_EXTS.has(path.extname(f).toLowerCase()))
+      .map(f => `/cards/${f}`)
 
-    if (!res.ok || data.error) {
-      return NextResponse.json({ error: data.error?.message ?? 'Instagram error' }, { status: 500 })
+    if (images.length < 4) {
+      return NextResponse.json({ error: 'Add your photos to the /public/cards folder' }, { status: 500 })
     }
-
-    const images: string[] = (data.data ?? [])
-      .filter((p: { media_type: string }) => p.media_type === 'IMAGE' || p.media_type === 'CAROUSEL_ALBUM')
-      .map((p: { media_url: string; thumbnail_url?: string }) => p.media_url ?? p.thumbnail_url)
-      .filter(Boolean)
 
     return NextResponse.json({ images })
   } catch (e) {
