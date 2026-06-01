@@ -2,14 +2,12 @@
 import fs from 'fs'
 import path from 'path'
 
-const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
-
 export async function GET() {
   try {
     const cardsDir = path.join(process.cwd(), 'public', 'cards')
     const files = fs.existsSync(cardsDir) ? fs.readdirSync(cardsDir) : []
     const images = files
-      .filter(f => IMAGE_EXTS.has(path.extname(f).toLowerCase()))
+      .filter(f => f.endsWith('_card.jpg'))
       .map(f => `/cards/${f}`)
 
     if (images.length < 4) {
