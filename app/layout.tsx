@@ -1,8 +1,8 @@
-import type { Metadata } from "next"
+ï»¿import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "The Edit — Antara International",
+  title: "The Edit - Antara International",
   description: "A memory challenge. Beat it. Win 50% off.",
 }
 
