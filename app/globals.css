@@ -169,6 +169,13 @@ html, body {
   font-weight: 400;
 }
 
+.diff-discount {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  font-weight: 600;
+}
+
 .diff-detail {
   font-size: 10px;
   letter-spacing: 0.05em;

@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 
 const DIFFICULTY = {
-  easy:   { label: 'INITIATE',  pairs: 8,  time: 180, columns: 8 },
-  medium: { label: 'THE EDIT',  pairs: 15, time: 240, columns: 10 },
-  hard:   { label: 'COLLECTOR', pairs: 25, time: 300, columns: 10 },
+  easy:   { label: 'INITIATE',  pairs: 8,  time: 180, columns: 8,  discount: 10 },
+  medium: { label: 'THE EDIT',  pairs: 15, time: 240, columns: 10, discount: 20 },
+  hard:   { label: 'COLLECTOR', pairs: 25, time: 300, columns: 10, discount: 30 },
 } as const
 
 type Difficulty = keyof typeof DIFFICULTY
@@ -201,7 +201,7 @@ export default function AntaraGame() {
         )}
         <div className="game-rules">
           <p>Match all pairs to complete the challenge.</p>
-          <p>Beat it in time &mdash; win 50% off your next order.</p>
+          <p>Beat it in time &mdash; win up to 30% off your next order.</p>
         </div>
         <div className="difficulty-label">SELECT LEVEL</div>
         <div className="difficulty-btns">
@@ -212,6 +212,7 @@ export default function AntaraGame() {
               onClick={() => setDifficulty(d)}
             >
               <span className="diff-name">{DIFFICULTY[d].label}</span>
+              <span className="diff-discount">{DIFFICULTY[d].discount}% OFF</span>
               <span className="diff-detail">{DIFFICULTY[d].pairs} pairs &middot; {fmt(DIFFICULTY[d].time)}</span>
             </button>
           ))}
