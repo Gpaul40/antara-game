@@ -4,13 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 
 const DIFFICULTY = {
-  easy:   { label: 'INITIATE',  pairs: 8,  time: 180, columns: 8,  discount: 10 },
-  medium: { label: 'THE EDIT',  pairs: 15, time: 240, columns: 10, discount: 20 },
-  hard:   { label: 'COLLECTOR', pairs: 25, time: 300, columns: 10, discount: 30 },
+  easy:   { label: 'INITIATE',  pairs: 8,  time: 180, columns: 8,  discount: 10, code: 'ANTARA10' },
+  medium: { label: 'THE EDIT',  pairs: 15, time: 240, columns: 10, discount: 20, code: 'ANTARA20' },
+  hard:   { label: 'COLLECTOR', pairs: 25, time: 300, columns: 10, discount: 30, code: 'ANTARA30' },
 } as const
 
 type Difficulty = keyof typeof DIFFICULTY
-const DISCOUNT_CODE = 'ANTARA50'
 
 interface Card {
   id: number
@@ -279,11 +278,11 @@ export default function AntaraGame() {
           </div>
           <div className="discount-block">
             <p className="discount-label">Your Reward</p>
-            <div className="discount-code">{DISCOUNT_CODE}</div>
-            <p className="discount-value">50% off your next order</p>
+            <div className="discount-code">{cfg.code}</div>
+            <p className="discount-value">{cfg.discount}% off your next order</p>
             <p className="discount-note">Enter at checkout &middot; Single use &middot; Valid 48 hours</p>
           </div>
-          <a className="shop-btn" href="https://antarainternational.com/collections/all">SHOP NOW</a>
+          <a className="shop-btn" href={`https://antarainternational.com/collections/all?discount=${cfg.code}`}>SHOP NOW</a>
           <button className="play-again-btn" onClick={() => setGameState('intro')}>PLAY AGAIN</button>
         </div>
       </div>
