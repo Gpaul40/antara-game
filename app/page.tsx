@@ -1,19 +1,12 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-
-const ROMAN_NUMERALS = [
-  'I','II','III','IV','V','VI','VII','VIII','IX','X',
-  'XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX',
-  'XXI','XXII','XXIII','XXIV','XXV','XXVI','XXVII','XXVIII','XXIX','XXX',
-  'XXXI','XXXII','XXXIII','XXXIV','XXXV','XXXVI','XXXVII','XXXVIII','XXXIX','XL',
-  'XLI','XLII','XLIII','XLIV','XLV','XLVI','XLVII','XLVIII','XLIX','L'
-]
+import Image from 'next/image'
 
 const DIFFICULTY = {
-  easy:   { label: 'INITIATE',  pairs: 16, time: 180, columns: 8 },
-  medium: { label: 'THE EDIT',  pairs: 30, time: 240, columns: 10 },
-  hard:   { label: 'COLLECTOR', pairs: 50, time: 300, columns: 10 },
+  easy:   { label: 'INITIATE',  pairs: 8,  time: 180, columns: 8 },
+  medium: { label: 'THE EDIT',  pairs: 15, time: 240, columns: 10 },
+  hard:   { label: 'COLLECTOR', pairs: 25, time: 300, columns: 10 },
 } as const
 
 type Difficulty = keyof typeof DIFFICULTY
@@ -22,12 +15,12 @@ const DISCOUNT_CODE = 'ANTARA50'
 interface Card {
   id: number
   pairId: number
-  numeral: string
+  imageUrl: string
   isFlipped: boolean
   isMatched: boolean
 }
 
-type GameState = 'intro' | 'peek' | 'playing' | 'won' | 'lost'
+type GameState = 'intro' | 'loading' | 'peek' | 'playing' | 'won' | 'lost'
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -38,10 +31,11 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-function generateCards(numPairs: number): Card[] {
-  const pairs = ROMAN_NUMERALS.slice(0, numPairs).flatMap((numeral, i) => [
-    { id: i * 2,     pairId: i, numeral, isFlipped: false, isMatched: false },
-    { id: i * 2 + 1, pairId: i, numeral, isFlipped: false, isMatched: false },
+function generateCards(images: string[], numPairs: number): Card[] {
+  const pool = images.slice(0, numPairs)
+  const pairs = pool.flatMap((imageUrl, i) => [
+    { id: i * 2,     pairId: i, imageUrl, isFlipped: false, isMatched: false },
+    { id: i * 2 + 1, pairId: i, imageUrl, isFlipped: false, isMatched: false },
   ])
   return shuffle(pairs)
 }
@@ -50,6 +44,8 @@ export default function AntaraGame() {
   const [gameState, setGameState] = useState<GameState>('intro')
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
   const [cards, setCards] = useState<Card[]>([])
+  const [images, setImages] = useState<string[]>([])
+  const [imageError, setImageError] = useState<string | null>(null)
   const [flippedIds, setFlippedIds] = useState<number[]>([])
   const [matchedPairs, setMatchedPairs] = useState(0)
   const [timeLeft, setTimeLeft] = useState(0)
@@ -64,15 +60,32 @@ export default function AntaraGame() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(`antara-best-${difficulty}`)
-      if (stored) setBestTime(Number(stored))
-      else setBestTime(null)
+      setBestTime(stored ? Number(stored) : null)
     } catch { setBestTime(null) }
   }, [difficulty])
+
+  const loadImages = useCallback(async () => {
+    setGameState('loading')
+    setImageError(null)
+    try {
+      const res = await fetch('/api/instagram')
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      if (!data.images || data.images.length < 8) throw new Error('Not enough images')
+      setImages(data.images)
+      setGameState('intro')
+    } catch (e) {
+      setImageError(String(e))
+      setGameState('intro')
+    }
+  }, [])
+
+  useEffect(() => { loadImages() }, [loadImages])
 
   const startGame = useCallback((diff: Difficulty) => {
     const cfg = DIFFICULTY[diff]
     setDifficulty(diff)
-    setCards(generateCards(cfg.pairs).map(c => ({ ...c, isFlipped: true })))
+    setCards(generateCards(shuffle(images), cfg.pairs).map(c => ({ ...c, isFlipped: true })))
     setFlippedIds([])
     setMatchedPairs(0)
     setTimeLeft(cfg.time)
@@ -81,8 +94,9 @@ export default function AntaraGame() {
     setStreak(0)
     setPeekCountdown(3)
     setGameState('peek')
-  }, [])
+  }, [images])
 
+  // Peek countdown
   useEffect(() => {
     if (gameState !== 'peek') return
     if (peekCountdown <= 0) {
@@ -94,6 +108,7 @@ export default function AntaraGame() {
     return () => clearTimeout(id)
   }, [gameState, peekCountdown])
 
+  // Timer
   useEffect(() => {
     if (gameState !== 'playing') return
     if (timeLeft <= 0) { setGameState('lost'); return }
@@ -101,6 +116,7 @@ export default function AntaraGame() {
     return () => clearInterval(id)
   }, [gameState, timeLeft])
 
+  // Win check
   useEffect(() => {
     const cfg = DIFFICULTY[difficulty]
     if (gameState === 'playing' && matchedPairs === cfg.pairs) {
@@ -157,13 +173,32 @@ export default function AntaraGame() {
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   const cfg = DIFFICULTY[difficulty]
+  const hasImages = images.length >= 8
 
+  // ── LOADING ────────────────────────────────────────────────
+  if (gameState === 'loading') return (
+    <div className="intro-screen">
+      <div className="intro-content">
+        <div className="brand-logo">ANTARA INTERNATIONAL</div>
+        <div className="loading-spinner" />
+        <p className="game-subtitle">Loading The Edit&hellip;</p>
+      </div>
+    </div>
+  )
+
+  // ── INTRO ──────────────────────────────────────────────────
   if (gameState === 'intro') return (
     <div className="intro-screen">
       <div className="intro-content">
         <div className="brand-logo">ANTARA INTERNATIONAL</div>
         <h1 className="game-title">THE EDIT</h1>
         <p className="game-subtitle">A memory challenge for those who move with intention.</p>
+        {imageError && (
+          <div className="error-banner">
+            <p>Instagram not connected &mdash; token required.</p>
+            <button className="retry-btn" onClick={loadImages}>Retry</button>
+          </div>
+        )}
         <div className="game-rules">
           <p>Match all pairs to complete the challenge.</p>
           <p>Beat it in time &mdash; win 50% off your next order.</p>
@@ -184,11 +219,19 @@ export default function AntaraGame() {
         {bestTime !== null && (
           <div className="best-time">Best: {fmt(bestTime)} elapsed</div>
         )}
-        <button className="start-btn" onClick={() => startGame(difficulty)}>BEGIN</button>
+        <button
+          className="start-btn"
+          onClick={() => startGame(difficulty)}
+          disabled={!hasImages}
+          style={!hasImages ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+        >
+          {hasImages ? 'BEGIN' : 'CONNECT INSTAGRAM TO PLAY'}
+        </button>
       </div>
     </div>
   )
 
+  // ── PEEK ───────────────────────────────────────────────────
   if (gameState === 'peek') return (
     <div className="peek-screen">
       <div className="peek-overlay">
@@ -203,7 +246,9 @@ export default function AntaraGame() {
           <div key={card.id} className="card flipped">
             <div className="card-inner">
               <div className="card-back"><span className="card-back-logo">A</span></div>
-              <div className="card-front"><span className="card-numeral">{card.numeral}</span></div>
+              <div className="card-front card-front-img">
+                <Image src={card.imageUrl} alt="" fill sizes="15vw" className="card-photo" unoptimized />
+              </div>
             </div>
           </div>
         ))}
@@ -211,6 +256,7 @@ export default function AntaraGame() {
     </div>
   )
 
+  // ── WON ────────────────────────────────────────────────────
   if (gameState === 'won') {
     const elapsed = cfg.time - timeLeft
     return (
@@ -243,6 +289,7 @@ export default function AntaraGame() {
     )
   }
 
+  // ── LOST ───────────────────────────────────────────────────
   if (gameState === 'lost') return (
     <div className="result-screen lost-screen">
       <div className="result-content">
@@ -260,6 +307,7 @@ export default function AntaraGame() {
     </div>
   )
 
+  // ── PLAYING ────────────────────────────────────────────────
   const progress = matchedPairs / cfg.pairs
 
   return (
@@ -287,8 +335,16 @@ export default function AntaraGame() {
               <div className="card-back">
                 <span className="card-back-logo">A</span>
               </div>
-              <div className="card-front">
-                <span className="card-numeral">{card.numeral}</span>
+              <div className="card-front card-front-img">
+                <Image
+                  src={card.imageUrl}
+                  alt=""
+                  fill
+                  sizes="15vw"
+                  className="card-photo"
+                  unoptimized
+                />
+                {card.isMatched && <div className="card-matched-overlay" />}
               </div>
             </div>
           </div>

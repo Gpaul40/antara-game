@@ -636,3 +636,78 @@ html, body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--dark); }
 ::-webkit-scrollbar-thumb { background: rgba(201,169,110,0.25); border-radius: 2px; }
+
+/* ---- IMAGE CARDS ---- */
+.card-front-img {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-photo {
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.card:hover:not(.matched) .card-photo {
+  transform: scale(1.04);
+}
+
+.card-matched-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(201,169,110,0.15);
+  border: 2px solid var(--gold);
+  pointer-events: none;
+}
+
+/* ---- LOADING SPINNER ---- */
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(201,169,110,0.2);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin: 32px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- ERROR BANNER ---- */
+.error-banner {
+  background: rgba(201,169,110,0.06);
+  border: 1px solid rgba(201,169,110,0.2);
+  padding: 16px 24px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.error-banner p {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+.retry-btn {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid rgba(201,169,110,0.3);
+  color: var(--gold);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+}
+
+.retry-btn:hover {
+  border-color: var(--gold);
+  background: rgba(201,169,110,0.06);
+}
