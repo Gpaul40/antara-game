@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 
 const DIFFICULTY = {
-  easy:   { label: 'INITIATE',  pairs: 8,  time: 180, columns: 8,  discount: 10, code: 'MKBANTARA13Q10', shopUrl: 'https://antarainternational.com/discount/MKBANTARA13Q10' },
-  medium: { label: 'THE EDIT',  pairs: 15, time: 240, columns: 10, discount: 20, code: 'W8DANTARA2Q20',  shopUrl: 'https://antarainternational.com/discount/W8DANTARA2Q20' },
-  hard:   { label: 'COLLECTOR', pairs: 25, time: 300, columns: 10, discount: 30, code: 'NBZANTARACJ30',  shopUrl: 'https://antarainternational.com/discount/NBZANTARACJ30' },
+  hard: { label: 'THE COLLECTOR', pairs: 0, time: 150, columns: 16, discount: 30, code: 'NBZANTARACJ30', shopUrl: 'https://antarainternational.com/discount/NBZANTARACJ30' },
 } as const
 
 type Difficulty = keyof typeof DIFFICULTY
@@ -41,7 +39,7 @@ function generateCards(images: string[], numPairs: number): Card[] {
 
 export default function AntaraGame() {
   const [gameState, setGameState] = useState<GameState>('intro')
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium')
+  const [difficulty, setDifficulty] = useState<Difficulty>('hard')
   const [cards, setCards] = useState<Card[]>([])
   const [images, setImages] = useState<string[]>([])
   const [imageError, setImageError] = useState<string | null>(null)
@@ -53,6 +51,8 @@ export default function AntaraGame() {
   const [streak, setStreak] = useState(0)
   const [peekCountdown, setPeekCountdown] = useState(3)
   const [bestTime, setBestTime] = useState<number | null>(null)
+  const [activePairs, setActivePairs] = useState(0)
+  const [activeCols, setActiveCols] = useState(16)
   const cardsRef = useRef(cards)
   cardsRef.current = cards
 
@@ -83,8 +83,12 @@ export default function AntaraGame() {
 
   const startGame = useCallback((diff: Difficulty) => {
     const cfg = DIFFICULTY[diff]
+    const numPairs = cfg.pairs === 0 ? images.length : cfg.pairs
+    const cols = cfg.pairs === 0 ? 16 : cfg.columns
     setDifficulty(diff)
-    setCards(generateCards(shuffle(images), cfg.pairs).map(c => ({ ...c, isFlipped: true })))
+    setActivePairs(numPairs)
+    setActiveCols(cols)
+    setCards(generateCards(shuffle(images), numPairs).map(c => ({ ...c, isFlipped: true })))
     setFlippedIds([])
     setMatchedPairs(0)
     setTimeLeft(cfg.time)
@@ -118,7 +122,7 @@ export default function AntaraGame() {
   // Win check
   useEffect(() => {
     const cfg = DIFFICULTY[difficulty]
-    if (gameState === 'playing' && matchedPairs === cfg.pairs) {
+    if (gameState === 'playing' && activePairs > 0 && matchedPairs === activePairs) {
       setGameState('won')
       try {
         const elapsed = cfg.time - timeLeft
@@ -129,7 +133,7 @@ export default function AntaraGame() {
         }
       } catch { /* ignore */ }
     }
-  }, [matchedPairs, gameState, difficulty, timeLeft])
+  }, [matchedPairs, gameState, difficulty, timeLeft, activePairs])
 
   const handleCardClick = useCallback((cardId: number) => {
     if (isChecking || gameState !== 'playing') return
@@ -200,21 +204,14 @@ export default function AntaraGame() {
         )}
         <div className="game-rules">
           <p>Match all pairs to complete the challenge.</p>
-          <p>Beat it in time &mdash; win up to 30% off your next order.</p>
+          <p>Beat it in time &mdash; win 30% off your next order.</p>
         </div>
-        <div className="difficulty-label">SELECT LEVEL</div>
-        <div className="difficulty-btns">
-          {(Object.keys(DIFFICULTY) as Difficulty[]).map(d => (
-            <button
-              key={d}
-              className={`diff-btn${difficulty === d ? ' active' : ''}`}
-              onClick={() => setDifficulty(d)}
-            >
-              <span className="diff-name">{DIFFICULTY[d].label}</span>
-              <span className="diff-discount">{DIFFICULTY[d].discount}% OFF</span>
-              <span className="diff-detail">{DIFFICULTY[d].pairs} pairs &middot; {fmt(DIFFICULTY[d].time)}</span>
-            </button>
-          ))}
+        <div className="single-level-display">
+          <div className="diff-btn active single-level">
+            <span className="diff-name">THE COLLECTOR</span>
+            <span className="diff-discount">30% OFF</span>
+            <span className="diff-detail">{images.length > 0 ? images.length : '—'} pairs &middot; 2:30</span>
+          </div>
         </div>
         {bestTime !== null && (
           <div className="best-time">Best: {fmt(bestTime)} elapsed</div>
@@ -241,7 +238,7 @@ export default function AntaraGame() {
           <div className="peek-countdown">{peekCountdown}</div>
         </div>
       </div>
-      <div className="cards-grid peek-grid" style={{ '--cols': cfg.columns } as React.CSSProperties}>
+      <div className="cards-grid peek-grid" style={{ '--cols': activeCols } as React.CSSProperties}>
         {cards.map(card => (
           <div key={card.id} className="card flipped">
             <div className="card-inner">
@@ -299,17 +296,17 @@ export default function AntaraGame() {
         <h1 className="result-title">TIME EXPIRED.</h1>
         <p className="result-subtitle">The disciplined return. The rest move on.</p>
         <div className="lost-progress">
-          <div className="lost-progress-bar" style={{ width: `${(matchedPairs / cfg.pairs) * 100}%` }} />
+          <div className="lost-progress-bar" style={{ width: `${(matchedPairs / activePairs) * 100}%` }} />
         </div>
-        <p className="pairs-info">{matchedPairs} of {cfg.pairs} pairs matched</p>
+        <p className="pairs-info">{matchedPairs} of {activePairs} pairs matched</p>
         <button className="start-btn" onClick={() => startGame(difficulty)}>TRY AGAIN</button>
-        <button className="play-again-btn" onClick={() => setGameState('intro')}>CHANGE LEVEL</button>
+        <button className="play-again-btn" onClick={() => setGameState('intro')}>BACK</button>
       </div>
     </div>
   )
 
   // ── PLAYING ────────────────────────────────────────────────
-  const progress = matchedPairs / cfg.pairs
+  const progress = matchedPairs / activePairs
 
   return (
     <div className="game-screen">
@@ -317,7 +314,7 @@ export default function AntaraGame() {
         <div className="brand-logo-sm">ANTARA</div>
         <div className="game-stats">
           <div className={`timer${timeLeft < 60 ? ' urgent' : ''}`}>{fmt(timeLeft)}</div>
-          <div className="pairs-stat">{matchedPairs}/{cfg.pairs}</div>
+          <div className="pairs-stat">{matchedPairs}/{activePairs}</div>
           <div className="moves-stat">{moves} moves</div>
           {streak >= 3 && <div className="streak">{streak}x</div>}
         </div>
@@ -325,7 +322,7 @@ export default function AntaraGame() {
       <div className="progress-track">
         <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
       </div>
-      <div className="cards-grid" style={{ '--cols': cfg.columns } as React.CSSProperties}>
+      <div className="cards-grid" style={{ '--cols': activeCols } as React.CSSProperties}>
         {cards.map(card => (
           <div
             key={card.id}

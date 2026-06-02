@@ -135,6 +135,18 @@ html, body {
   flex-wrap: wrap;
 }
 
+.single-level-display {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.diff-btn.single-level {
+  min-width: 160px;
+  cursor: default;
+  pointer-events: none;
+}
+
 .diff-btn {
   background: transparent;
   border: 1px solid rgba(201,169,110,0.2);
