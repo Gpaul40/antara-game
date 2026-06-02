@@ -226,6 +226,16 @@ html, body {
   color: var(--gold);
 }
 
+/* Reward CTA — larger and more prominent */
+.shop-btn-reward {
+  font-size: 13px;
+  padding: 18px 40px;
+  letter-spacing: 0.2em;
+  box-shadow: 0 0 32px rgba(201,169,110,0.4);
+  width: 100%;
+  max-width: 380px;
+}
+
 .play-again-btn {
   background: transparent;
   color: var(--text-dim);
@@ -341,10 +351,11 @@ html, body {
 }
 
 .discount-value {
-  font-size: 13px;
-  letter-spacing: 0.12em;
-  color: var(--text);
-  margin-bottom: 8px;
+  font-size: 20px;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  margin-bottom: 10px;
+  font-weight: 300;
 }
 
 .discount-note {

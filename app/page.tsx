@@ -278,11 +278,12 @@ export default function AntaraGame() {
           </div>
           <div className="discount-block">
             <p className="discount-label">Your Reward</p>
-            <div className="discount-code">{cfg.code}</div>
-            <p className="discount-value">{cfg.discount}% off your next order</p>
-            <p className="discount-note">Enter at checkout &middot; Single use &middot; Valid 48 hours</p>
+            <p className="discount-value">{cfg.discount}% OFF — Unlocked</p>
+            <p className="discount-note">Discount applied automatically at checkout &middot; Single use &middot; Valid 48 hours</p>
           </div>
-          <a className="shop-btn" href={cfg.shopUrl}>SHOP NOW</a>
+          <a className="shop-btn shop-btn-reward" href={cfg.shopUrl}>
+            CLAIM {cfg.discount}% OFF — SHOP NOW
+          </a>
           <button className="play-again-btn" onClick={() => setGameState('intro')}>PLAY AGAIN</button>
         </div>
       </div>
