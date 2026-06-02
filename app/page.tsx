@@ -17,7 +17,7 @@ interface Card {
   isMatched: boolean
 }
 
-type GameState = 'intro' | 'loading' | 'peek' | 'playing' | 'won' | 'lost'
+type GameState = 'intro' | 'loading' | 'peek' | 'playing' | 'level_complete' | 'won' | 'lost'
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -53,6 +53,8 @@ export default function AntaraGame() {
   const [bestTime, setBestTime] = useState<number | null>(null)
   const [activePairs, setActivePairs] = useState(0)
   const [activeCols, setActiveCols] = useState(16)
+  const [level, setLevel] = useState(1)
+  const [levelImages, setLevelImages] = useState<string[]>([])
   const cardsRef = useRef(cards)
   cardsRef.current = cards
 
@@ -83,12 +85,16 @@ export default function AntaraGame() {
 
   const startGame = useCallback((diff: Difficulty) => {
     const cfg = DIFFICULTY[diff]
-    const numPairs = cfg.pairs === 0 ? images.length : cfg.pairs
-    const cols = cfg.pairs === 0 ? 16 : cfg.columns
+    const shuffled = shuffle(images)
+    const numPairs = Math.floor(shuffled.length / 2)
+    const lvl1Images = shuffled.slice(0, numPairs)
+    const cols = 16
     setDifficulty(diff)
     setActivePairs(numPairs)
     setActiveCols(cols)
-    setCards(generateCards(shuffle(images), numPairs).map(c => ({ ...c, isFlipped: true })))
+    setLevel(1)
+    setLevelImages(shuffled) // store all shuffled images for level 2
+    setCards(generateCards(lvl1Images, numPairs).map(c => ({ ...c, isFlipped: true })))
     setFlippedIds([])
     setMatchedPairs(0)
     setTimeLeft(cfg.time)
@@ -98,6 +104,21 @@ export default function AntaraGame() {
     setPeekCountdown(3)
     setGameState('peek')
   }, [images])
+
+  const startLevel2 = useCallback(() => {
+    const shuffled = levelImages
+    const numPairs = Math.floor(shuffled.length / 2)
+    const lvl2Images = shuffled.slice(numPairs)
+    setLevel(2)
+    setActivePairs(numPairs)
+    setMatchedPairs(0)
+    setCards(generateCards(lvl2Images, numPairs).map(c => ({ ...c, isFlipped: true })))
+    setFlippedIds([])
+    setIsChecking(false)
+    setStreak(0)
+    setPeekCountdown(3)
+    setGameState('peek')
+  }, [levelImages])
 
   // Peek countdown
   useEffect(() => {
@@ -119,21 +140,25 @@ export default function AntaraGame() {
     return () => clearInterval(id)
   }, [gameState, timeLeft])
 
-  // Win check
+  // Win / level-complete check
   useEffect(() => {
     const cfg = DIFFICULTY[difficulty]
     if (gameState === 'playing' && activePairs > 0 && matchedPairs === activePairs) {
-      setGameState('won')
-      try {
-        const elapsed = cfg.time - timeLeft
-        const stored = localStorage.getItem(`antara-best-${difficulty}`)
-        if (!stored || elapsed < Number(stored)) {
-          localStorage.setItem(`antara-best-${difficulty}`, String(elapsed))
-          setBestTime(elapsed)
-        }
-      } catch { /* ignore */ }
+      if (level === 1) {
+        setGameState('level_complete')
+      } else {
+        setGameState('won')
+        try {
+          const elapsed = cfg.time - timeLeft
+          const stored = localStorage.getItem(`antara-best-${difficulty}`)
+          if (!stored || elapsed < Number(stored)) {
+            localStorage.setItem(`antara-best-${difficulty}`, String(elapsed))
+            setBestTime(elapsed)
+          }
+        } catch { /* ignore */ }
+      }
     }
-  }, [matchedPairs, gameState, difficulty, timeLeft, activePairs])
+  }, [matchedPairs, gameState, difficulty, timeLeft, activePairs, level])
 
   const handleCardClick = useCallback((cardId: number) => {
     if (isChecking || gameState !== 'playing') return
@@ -155,6 +180,7 @@ export default function AntaraGame() {
               next.includes(c.id) ? { ...c, isMatched: true, isFlipped: true } : c
             ))
             setMatchedPairs(m => m + 1)
+            setTimeLeft(t => t + 10)
             setStreak(s => s + 1)
             setFlippedIds([])
             setIsChecking(false)
@@ -210,7 +236,7 @@ export default function AntaraGame() {
           <div className="diff-btn active single-level">
             <span className="diff-name">THE COLLECTOR</span>
             <span className="diff-discount">30% OFF</span>
-            <span className="diff-detail">{images.length > 0 ? images.length : '—'} pairs &middot; 2:30</span>
+            <span className="diff-detail">2 levels · {images.length > 0 ? Math.floor(images.length / 2) : '—'} pairs each · +10s per match</span>
           </div>
         </div>
         {bestTime !== null && (
@@ -253,7 +279,31 @@ export default function AntaraGame() {
     </div>
   )
 
-  // ── WON ────────────────────────────────────────────────────
+  // ── LEVEL COMPLETE ─────────────────────────────────────────
+  if (gameState === 'level_complete') return (
+    <div className="result-screen won-screen">
+      <div className="particles">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="particle" style={{ '--i': i } as React.CSSProperties} />
+        ))}
+      </div>
+      <div className="result-content">
+        <div className="brand-logo">ANTARA INTERNATIONAL</div>
+        <div className="result-icon won-icon">&#10022;</div>
+        <h1 className="result-title">LEVEL 1 COMPLETE.</h1>
+        <p className="result-subtitle">Halfway there. Stay sharp.</p>
+        <div className="win-stats">
+          <div className="win-stat"><span>{fmt(timeLeft)}</span><label>Time Left</label></div>
+          <div className="win-stat-divider" />
+          <div className="win-stat"><span>{moves}</span><label>Moves</label></div>
+        </div>
+        <p className="discount-note" style={{ marginTop: '1rem' }}>Your timer carries over to Level 2</p>
+        <button className="start-btn" style={{ marginTop: '1.5rem' }} onClick={startLevel2}>BEGIN LEVEL 2</button>
+      </div>
+    </div>
+  )
+
+
   if (gameState === 'won') {
     const elapsed = cfg.time - timeLeft
     return (
@@ -313,6 +363,7 @@ export default function AntaraGame() {
       <header className="game-header">
         <div className="brand-logo-sm">ANTARA</div>
         <div className="game-stats">
+          <div className="level-badge">LVL {level}/2</div>
           <div className={`timer${timeLeft < 60 ? ' urgent' : ''}`}>{fmt(timeLeft)}</div>
           <div className="pairs-stat">{matchedPairs}/{activePairs}</div>
           <div className="moves-stat">{moves} moves</div>
