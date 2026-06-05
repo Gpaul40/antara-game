@@ -44,7 +44,7 @@ function isNSFW(value: string): boolean {
 }
 
 const SEED_SCORES: HighscoreEntry[] = [
-  { name: 'Arnold', city: 'California', country: 'US', time: 340, clicks: 183, date: '2026-06-01T00:00:00.000Z' },
+  { name: 'Arnold', city: 'California', country: 'US', time: 340, clicks: 258, date: '2026-06-01T00:00:00.000Z' },
 ]
 
 function getHighscores(): HighscoreEntry[] {
