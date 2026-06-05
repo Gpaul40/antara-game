@@ -17,7 +17,47 @@ interface Card {
   isMatched: boolean
 }
 
-type GameState = 'intro' | 'loading' | 'peek' | 'playing' | 'level_complete' | 'won' | 'lost'
+type GameState = 'intro' | 'loading' | 'peek' | 'playing' | 'level_complete' | 'won' | 'lost' | 'enter_name'
+
+interface HighscoreEntry {
+  name: string
+  city: string
+  time: number   // elapsed seconds
+  clicks: number // total moves
+  date: string   // ISO date string
+}
+
+const HIGHSCORES_KEY = 'antara-highscores'
+const MAX_SCORES = 5
+
+// Basic NSFW word blocklist — covers the most common offensive terms used as names
+const NSFW_WORDS = [
+  'fuck','shit','ass','bitch','cunt','dick','cock','pussy','nigger','nigga','fag','faggot',
+  'whore','slut','bastard','prick','twat','wank','wanker','motherfucker','retard','spastic',
+  'kike','chink','spic','wetback','gook','tranny','rape','nazi',
+]
+
+function isNSFW(value: string): boolean {
+  const lower = value.toLowerCase().replace(/[^a-z]/g, '')
+  return NSFW_WORDS.some(w => lower.includes(w))
+}
+
+function getHighscores(): HighscoreEntry[] {
+  try {
+    const raw = localStorage.getItem(HIGHSCORES_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveHighscore(entry: HighscoreEntry): HighscoreEntry[] {
+  const scores = getHighscores()
+  scores.push(entry)
+  // Sort by fastest time (lowest elapsed), then fewest clicks on tie
+  scores.sort((a, b) => a.time !== b.time ? a.time - b.time : a.clicks - b.clicks)
+  const top = scores.slice(0, MAX_SCORES)
+  try { localStorage.setItem(HIGHSCORES_KEY, JSON.stringify(top)) } catch { /* ignore */ }
+  return top
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -57,6 +97,18 @@ export default function AntaraGame() {
   const [levelImages, setLevelImages] = useState<string[]>([])
   const cardsRef = useRef(cards)
   cardsRef.current = cards
+
+  // Highscores state
+  const [highscores, setHighscores] = useState<HighscoreEntry[]>([])
+  const [nameInput, setNameInput] = useState('')
+  const [cityInput, setCityInput] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [wonElapsed, setWonElapsed] = useState(0)
+  const [wonMoves, setWonMoves] = useState(0)
+
+  useEffect(() => {
+    setHighscores(getHighscores())
+  }, [])
 
   useEffect(() => {
     try {
@@ -147,18 +199,24 @@ export default function AntaraGame() {
       if (level === 1) {
         setGameState('level_complete')
       } else {
-        setGameState('won')
+        const elapsed = cfg.time - timeLeft
+        setWonElapsed(elapsed)
+        setWonMoves(moves)
         try {
-          const elapsed = cfg.time - timeLeft
           const stored = localStorage.getItem(`antara-best-${difficulty}`)
           if (!stored || elapsed < Number(stored)) {
             localStorage.setItem(`antara-best-${difficulty}`, String(elapsed))
             setBestTime(elapsed)
           }
         } catch { /* ignore */ }
+        // Reset name form and go to enter_name screen
+        setNameInput('')
+        setCityInput('')
+        setNameError('')
+        setGameState('enter_name')
       }
     }
-  }, [matchedPairs, gameState, difficulty, timeLeft, activePairs, level])
+  }, [matchedPairs, gameState, difficulty, timeLeft, activePairs, level, moves])
 
   const handleCardClick = useCallback((cardId: number) => {
     if (isChecking || gameState !== 'playing') return
@@ -250,6 +308,7 @@ export default function AntaraGame() {
         >
           {hasImages ? 'BEGIN' : 'ADD PHOTOS TO PLAY'}
         </button>
+        {highscores.length > 0 && <HighscoreBoard scores={highscores} fmt={fmt} />}
       </div>
     </div>
   )
@@ -304,8 +363,19 @@ export default function AntaraGame() {
   )
 
 
-  if (gameState === 'won') {
-    const elapsed = cfg.time - timeLeft
+  // ── ENTER NAME (after winning) ─────────────────────────────
+  if (gameState === 'enter_name') {
+    const handleSubmitName = () => {
+      const name = nameInput.trim()
+      const city = cityInput.trim()
+      if (!name || !city) { setNameError('Please enter both your name and city.'); return }
+      if (name.length > 30) { setNameError('Name must be 30 characters or fewer.'); return }
+      if (city.length > 40) { setNameError('City must be 40 characters or fewer.'); return }
+      if (isNSFW(name) || isNSFW(city)) { setNameError('Please keep it clean — no inappropriate words.'); return }
+      const updated = saveHighscore({ name, city, time: wonElapsed, clicks: wonMoves, date: new Date().toISOString() })
+      setHighscores(updated)
+      setGameState('won')
+    }
     return (
       <div className="result-screen won-screen">
         <div className="particles">
@@ -319,9 +389,61 @@ export default function AntaraGame() {
           <h1 className="result-title">YOU PREVAILED.</h1>
           <p className="result-subtitle">Quiet confidence. Well played.</p>
           <div className="win-stats">
-            <div className="win-stat"><span>{fmt(elapsed)}</span><label>Time</label></div>
+            <div className="win-stat"><span>{fmt(wonElapsed)}</span><label>Time</label></div>
             <div className="win-stat-divider" />
-            <div className="win-stat"><span>{moves}</span><label>Moves</label></div>
+            <div className="win-stat"><span>{wonMoves}</span><label>Clicks</label></div>
+          </div>
+          <div className="name-entry-block">
+            <p className="name-entry-label">Claim your spot on the leaderboard</p>
+            <input
+              className="name-entry-input"
+              type="text"
+              placeholder="First name"
+              value={nameInput}
+              maxLength={30}
+              onChange={e => { setNameInput(e.target.value); setNameError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleSubmitName()}
+              autoFocus
+            />
+            <input
+              className="name-entry-input"
+              type="text"
+              placeholder="City"
+              value={cityInput}
+              maxLength={40}
+              onChange={e => { setCityInput(e.target.value); setNameError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleSubmitName()}
+            />
+            {nameError && <p className="name-entry-error">{nameError}</p>}
+            <button className="start-btn" style={{ marginTop: '1rem', width: '100%' }} onClick={handleSubmitName}>
+              SUBMIT
+            </button>
+            <button className="play-again-btn" style={{ marginTop: '0.5rem', width: '100%' }} onClick={() => setGameState('won')}>
+              Skip
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (gameState === 'won') {
+    return (
+      <div className="result-screen won-screen">
+        <div className="particles">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className="particle" style={{ '--i': i } as React.CSSProperties} />
+          ))}
+        </div>
+        <div className="result-content">
+          <div className="brand-logo">ANTARA INTERNATIONAL</div>
+          <div className="result-icon won-icon">&#10022;</div>
+          <h1 className="result-title">YOU PREVAILED.</h1>
+          <p className="result-subtitle">Quiet confidence. Well played.</p>
+          <div className="win-stats">
+            <div className="win-stat"><span>{fmt(wonElapsed)}</span><label>Time</label></div>
+            <div className="win-stat-divider" />
+            <div className="win-stat"><span>{wonMoves}</span><label>Clicks</label></div>
           </div>
           <div className="discount-block">
             <p className="discount-label">Your Reward</p>
@@ -331,7 +453,8 @@ export default function AntaraGame() {
           <a className="shop-btn shop-btn-reward" href={cfg.shopUrl}>
             CLAIM {cfg.discount}% OFF — SHOP NOW
           </a>
-          <button className="play-again-btn" onClick={() => setGameState('intro')}>PLAY AGAIN</button>
+          {highscores.length > 0 && <HighscoreBoard scores={highscores} fmt={fmt} />}
+          <button className="play-again-btn" style={{ marginTop: '1rem' }} onClick={() => setGameState('intro')}>PLAY AGAIN</button>
         </div>
       </div>
     )
@@ -399,6 +522,37 @@ export default function AntaraGame() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ── HIGHSCORE BOARD ────────────────────────────────────────
+function HighscoreBoard({ scores, fmt }: { scores: HighscoreEntry[], fmt: (s: number) => string }) {
+  return (
+    <div className="highscore-board">
+      <p className="highscore-title">TOP {scores.length}</p>
+      <table className="highscore-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>City</th>
+            <th>Time</th>
+            <th>Clicks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {scores.map((s, i) => (
+            <tr key={i} className={i === 0 ? 'hs-first' : ''}>
+              <td className="hs-rank">{i === 0 ? '✦' : i + 1}</td>
+              <td className="hs-name">{s.name}</td>
+              <td className="hs-city">{s.city}</td>
+              <td className="hs-time">{fmt(s.time)}</td>
+              <td className="hs-clicks">{s.clicks}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

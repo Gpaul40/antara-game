@@ -679,6 +679,106 @@ html, body {
 ::-webkit-scrollbar-track { background: var(--dark); }
 ::-webkit-scrollbar-thumb { background: rgba(201,169,110,0.25); border-radius: 2px; }
 
+/* ---- NAME ENTRY ---- */
+.name-entry-block {
+  margin: 24px 0 0;
+  padding: 28px 32px;
+  background: linear-gradient(135deg, var(--dark-3), var(--dark-4));
+  border: 1px solid rgba(201,169,110,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.name-entry-label {
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.name-entry-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(201,169,110,0.3);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  padding: 10px 4px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.25s;
+}
+
+.name-entry-input::placeholder { color: var(--text-dim); }
+.name-entry-input:focus { border-bottom-color: var(--gold); }
+
+.name-entry-error {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #e06060;
+  margin-top: -4px;
+}
+
+/* ---- HIGHSCORE BOARD ---- */
+.highscore-board {
+  margin-top: 36px;
+  border-top: 1px solid rgba(201,169,110,0.15);
+  padding-top: 24px;
+  width: 100%;
+}
+
+.highscore-title {
+  font-size: 9px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.highscore-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.highscore-table th {
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0 8px 10px;
+  text-align: left;
+  font-weight: 400;
+  border-bottom: 1px solid rgba(201,169,110,0.1);
+}
+
+.highscore-table td {
+  padding: 9px 8px;
+  color: var(--text-dim);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.highscore-table tr.hs-first td {
+  color: var(--gold);
+}
+
+.hs-rank {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--gold);
+  width: 24px;
+  opacity: 0.7;
+}
+
+.hs-name { font-weight: 400; letter-spacing: 0.05em; }
+.hs-city { opacity: 0.6; font-size: 10px; letter-spacing: 0.08em; }
+.hs-time { font-family: var(--font); font-size: 13px; letter-spacing: 0.05em; }
+.hs-clicks { text-align: right; opacity: 0.7; }
+
 /* ---- IMAGE CARDS ---- */
 .card-front-img {
   padding: 0;
