@@ -488,7 +488,7 @@ export default function AntaraGame() {
             <p className="discount-value">{cfg.discount}% OFF — Unlocked</p>
             <p className="discount-note">Discount applied automatically at checkout &middot; Single use &middot; Valid 48 hours</p>
           </div>
-          <a className="shop-btn shop-btn-reward" href={cfg.shopUrl}>
+          <a className="shop-btn shop-btn-reward" href={cfg.shopUrl} target="_blank" rel="noopener noreferrer">
             CLAIM {cfg.discount}% OFF — SHOP NOW
           </a>
           {highscores.length > 0 && <HighscoreBoard scores={highscores} fmt={fmt} />}
