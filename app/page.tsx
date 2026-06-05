@@ -22,6 +22,7 @@ type GameState = 'intro' | 'loading' | 'peek' | 'playing' | 'level_complete' | '
 interface HighscoreEntry {
   name: string
   city: string
+  country?: string  // ISO 2-letter country code e.g. "US"
   time: number   // elapsed seconds
   clicks: number // total moves
   date: string   // ISO date string
@@ -43,7 +44,7 @@ function isNSFW(value: string): boolean {
 }
 
 const SEED_SCORES: HighscoreEntry[] = [
-  { name: 'Arnold', city: 'California', time: 340, clicks: 58, date: '2026-06-01T00:00:00.000Z' },
+  { name: 'Arnold', city: 'California', country: 'US', time: 340, clicks: 183, date: '2026-06-01T00:00:00.000Z' },
 ]
 
 function getHighscores(): HighscoreEntry[] {
@@ -109,6 +110,7 @@ export default function AntaraGame() {
   const [highscores, setHighscores] = useState<HighscoreEntry[]>([])
   const [nameInput, setNameInput] = useState('')
   const [cityInput, setCityInput] = useState('')
+  const [countryCode, setCountryCode] = useState('')
   const [nameError, setNameError] = useState('')
   const [wonElapsed, setWonElapsed] = useState(0)
   const [wonMoves, setWonMoves] = useState(0)
@@ -124,14 +126,17 @@ export default function AntaraGame() {
     if (gameState !== 'enter_name') return
     setCityDetecting(true)
     setCityAutoDetected(false)
+    setCountryCode('')
     fetch('https://ipapi.co/json/')
       .then(r => r.json())
       .then(data => {
         const city = data.city || ''
+        const cc = (data.country_code || '').toUpperCase()
         if (city) {
           setCityInput(city)
           setCityAutoDetected(true)
         }
+        if (cc) setCountryCode(cc)
       })
       .catch(() => { /* silently fail — user can type manually */ })
       .finally(() => setCityDetecting(false))
@@ -317,6 +322,7 @@ export default function AntaraGame() {
           <p>Match all pairs to complete the challenge.</p>
           <p>Beat it in time &mdash; win 30% off your next order.</p>
         </div>
+        {highscores.length > 0 && <HighscoreBoard scores={highscores} fmt={fmt} />}
         <div className="single-level-display">
           <div className="diff-btn active single-level">
             <span className="diff-name">THE COLLECTOR</span>
@@ -335,7 +341,6 @@ export default function AntaraGame() {
         >
           {hasImages ? 'BEGIN' : 'ADD PHOTOS TO PLAY'}
         </button>
-        {highscores.length > 0 && <HighscoreBoard scores={highscores} fmt={fmt} />}
       </div>
     </div>
   )
@@ -399,7 +404,7 @@ export default function AntaraGame() {
       if (name.length > 30) { setNameError('Name must be 30 characters or fewer.'); return }
       if (city.length > 40) { setNameError('City must be 40 characters or fewer.'); return }
       if (isNSFW(name) || isNSFW(city)) { setNameError('Please keep it clean — no inappropriate words.'); return }
-      const updated = saveHighscore({ name, city, time: wonElapsed, clicks: wonMoves, date: new Date().toISOString() })
+      const updated = saveHighscore({ name, city, country: countryCode || undefined, time: wonElapsed, clicks: wonMoves, date: new Date().toISOString() })
       setHighscores(updated)
       setGameState('won')
     }
@@ -560,6 +565,12 @@ export default function AntaraGame() {
 }
 
 // ── HIGHSCORE BOARD ────────────────────────────────────────
+function countryFlag(cc?: string): string {
+  if (!cc || cc.length !== 2) return ''
+  // Convert ISO country code to regional indicator emoji (flag)
+  return [...cc.toUpperCase()].map(c => String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0))).join('')
+}
+
 function HighscoreBoard({ scores, fmt }: { scores: HighscoreEntry[], fmt: (s: number) => string }) {
   return (
     <div className="highscore-board">
@@ -579,7 +590,10 @@ function HighscoreBoard({ scores, fmt }: { scores: HighscoreEntry[], fmt: (s: nu
             <tr key={i} className={i === 0 ? 'hs-first' : ''}>
               <td className="hs-rank">{i === 0 ? '✦' : i + 1}</td>
               <td className="hs-name">{s.name}</td>
-              <td className="hs-city">{s.city}</td>
+              <td className="hs-city">
+                {s.country && <span className="hs-flag">{countryFlag(s.country)}</span>}
+                {s.city}
+              </td>
               <td className="hs-time">{fmt(s.time)}</td>
               <td className="hs-clicks">{s.clicks}</td>
             </tr>
