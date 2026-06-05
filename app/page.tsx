@@ -29,6 +29,8 @@ interface HighscoreEntry {
 }
 
 const HIGHSCORES_KEY = 'antara-highscores'
+const HIGHSCORES_VERSION_KEY = 'antara-highscores-v'
+const HIGHSCORES_VERSION = '4' // bump this whenever the seed data changes
 const MAX_SCORES = 5
 
 // Basic NSFW word blocklist — covers the most common offensive terms used as names
@@ -49,11 +51,21 @@ const SEED_SCORES: HighscoreEntry[] = [
 
 function getHighscores(): HighscoreEntry[] {
   try {
+    const storedVersion = localStorage.getItem(HIGHSCORES_VERSION_KEY)
     const raw = localStorage.getItem(HIGHSCORES_KEY)
-    if (raw) return JSON.parse(raw)
-    // First visit — seed with the default entry so the board is never empty
-    localStorage.setItem(HIGHSCORES_KEY, JSON.stringify(SEED_SCORES))
-    return SEED_SCORES
+    // Re-seed if first visit OR seed version changed (preserves real player scores)
+    if (!raw || storedVersion !== HIGHSCORES_VERSION) {
+      const existing: HighscoreEntry[] = raw ? JSON.parse(raw) : []
+      // Keep real player scores (those without the seed date), merge with fresh seed
+      const realScores = existing.filter(e => e.date !== '2026-06-01T00:00:00.000Z')
+      const merged = [...SEED_SCORES, ...realScores]
+        .sort((a, b) => a.time !== b.time ? a.time - b.time : a.clicks - b.clicks)
+        .slice(0, MAX_SCORES)
+      localStorage.setItem(HIGHSCORES_KEY, JSON.stringify(merged))
+      localStorage.setItem(HIGHSCORES_VERSION_KEY, HIGHSCORES_VERSION)
+      return merged
+    }
+    return JSON.parse(raw)
   } catch { return SEED_SCORES }
 }
 
