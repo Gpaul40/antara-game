@@ -602,10 +602,7 @@ function HighscoreBoard({ scores, fmt }: { scores: HighscoreEntry[], fmt: (s: nu
             <tr key={i} className={i === 0 ? 'hs-first' : ''}>
               <td className="hs-rank">{i === 0 ? '✦' : i + 1}</td>
               <td className="hs-name">{s.name}</td>
-              <td className="hs-city">
-                {s.country && <span className="hs-flag">{countryFlag(s.country)}</span>}
-                {s.city}
-              </td>
+              <td className="hs-city">{s.city}</td>
               <td className="hs-time">{fmt(s.time)}</td>
               <td className="hs-clicks">{s.clicks}</td>
             </tr>
