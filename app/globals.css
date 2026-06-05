@@ -714,6 +714,29 @@ html, body {
 
 .name-entry-input::placeholder { color: var(--text-dim); }
 .name-entry-input:focus { border-bottom-color: var(--gold); }
+.name-entry-input:disabled { opacity: 0.5; cursor: wait; }
+
+.city-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.city-input-wrap .name-entry-input {
+  flex: 1;
+  padding-right: 80px;
+}
+
+.city-detected-badge {
+  position: absolute;
+  right: 4px;
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.7;
+  pointer-events: none;
+}
 
 .name-entry-error {
   font-size: 10px;

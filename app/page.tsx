@@ -105,10 +105,30 @@ export default function AntaraGame() {
   const [nameError, setNameError] = useState('')
   const [wonElapsed, setWonElapsed] = useState(0)
   const [wonMoves, setWonMoves] = useState(0)
+  const [cityDetecting, setCityDetecting] = useState(false)
+  const [cityAutoDetected, setCityAutoDetected] = useState(false)
 
   useEffect(() => {
     setHighscores(getHighscores())
   }, [])
+
+  // Auto-detect city when name entry screen appears
+  useEffect(() => {
+    if (gameState !== 'enter_name') return
+    setCityDetecting(true)
+    setCityAutoDetected(false)
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then(data => {
+        const city = data.city || ''
+        if (city) {
+          setCityInput(city)
+          setCityAutoDetected(true)
+        }
+      })
+      .catch(() => { /* silently fail — user can type manually */ })
+      .finally(() => setCityDetecting(false))
+  }, [gameState])
 
   useEffect(() => {
     try {
@@ -405,15 +425,21 @@ export default function AntaraGame() {
               onKeyDown={e => e.key === 'Enter' && handleSubmitName()}
               autoFocus
             />
-            <input
-              className="name-entry-input"
-              type="text"
-              placeholder="City"
-              value={cityInput}
-              maxLength={40}
-              onChange={e => { setCityInput(e.target.value); setNameError('') }}
-              onKeyDown={e => e.key === 'Enter' && handleSubmitName()}
-            />
+            <div className="city-input-wrap">
+              <input
+                className="name-entry-input"
+                type="text"
+                placeholder={cityDetecting ? 'Detecting your city…' : 'City'}
+                value={cityInput}
+                maxLength={40}
+                onChange={e => { setCityInput(e.target.value); setNameError(''); setCityAutoDetected(false) }}
+                onKeyDown={e => e.key === 'Enter' && handleSubmitName()}
+                disabled={cityDetecting}
+              />
+              {cityAutoDetected && !cityDetecting && (
+                <span className="city-detected-badge">detected</span>
+              )}
+            </div>
             {nameError && <p className="name-entry-error">{nameError}</p>}
             <button className="start-btn" style={{ marginTop: '1rem', width: '100%' }} onClick={handleSubmitName}>
               SUBMIT
