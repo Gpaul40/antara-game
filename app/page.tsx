@@ -42,11 +42,18 @@ function isNSFW(value: string): boolean {
   return NSFW_WORDS.some(w => lower.includes(w))
 }
 
+const SEED_SCORES: HighscoreEntry[] = [
+  { name: 'Arnold', city: 'California', time: 340, clicks: 58, date: '2026-06-01T00:00:00.000Z' },
+]
+
 function getHighscores(): HighscoreEntry[] {
   try {
     const raw = localStorage.getItem(HIGHSCORES_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
+    if (raw) return JSON.parse(raw)
+    // First visit — seed with the default entry so the board is never empty
+    localStorage.setItem(HIGHSCORES_KEY, JSON.stringify(SEED_SCORES))
+    return SEED_SCORES
+  } catch { return SEED_SCORES }
 }
 
 function saveHighscore(entry: HighscoreEntry): HighscoreEntry[] {
