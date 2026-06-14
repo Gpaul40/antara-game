@@ -353,6 +353,14 @@ export default function AntaraGame() {
         >
           {hasImages ? 'BEGIN' : 'ADD PHOTOS TO PLAY'}
         </button>
+        <a
+          className="no-thanks-btn"
+          href={cfg.shopUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          No Thanks
+        </a>
       </div>
     </div>
   )

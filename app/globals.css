@@ -203,7 +203,7 @@ html, body {
 }
 
 /* ---- BUTTONS ---- */
-.start-btn, .shop-btn, .play-again-btn {
+.start-btn, .shop-btn, .play-again-btn, .no-thanks-btn {
   display: inline-block;
   font-size: 10px;
   letter-spacing: 0.4em;
@@ -256,6 +256,18 @@ html, body {
 .play-again-btn:hover {
   border-color: var(--gold);
   color: var(--gold);
+}
+
+.no-thanks-btn {
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  opacity: 0.6;
+}
+.no-thanks-btn:hover {
+  color: var(--text-dim);
+  opacity: 1;
+  text-decoration: underline;
 }
 
 /* ---- RESULT SCREENS ---- */
